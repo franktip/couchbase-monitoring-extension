@@ -34,21 +34,22 @@
  import java.util.Map;
  import java.util.Set;
  import java.util.concurrent.CountDownLatch;
-
-import static org.mockito.ArgumentMatchers.any;
-//  import static org.mockito.Matchers.any;
+ 
  import static org.mockito.Mockito.times;
  import static org.mockito.Mockito.verify;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+ import static org.mockito.Mockito.when;
  
  public class IndividualXDCRMetricTest {
  
-     MonitorContextConfiguration contextConfiguration = Mockito.mock(MonitorContextConfiguration.class);
-     MonitorContext context = Mockito.mock(MonitorContext.class);
-     MetricWriteHelper metricWriteHelper = Mockito.mock(MetricWriteHelper.class);
-     MonitorExecutorService executorService = Mockito.mock(MonitorExecutorService.class);
-     CloseableHttpClient httpClient = Mockito.mock(CloseableHttpClient.class);
-     CloseableHttpResponse response = Mockito.mock(CloseableHttpResponse.class);
-     StatusLine statusLine = Mockito.mock(StatusLine.class);
+     MonitorContextConfiguration contextConfiguration = mock(MonitorContextConfiguration.class);
+     MonitorContext context = mock(MonitorContext.class);
+     MetricWriteHelper metricWriteHelper = mock(MetricWriteHelper.class);
+     MonitorExecutorService executorService = mock(MonitorExecutorService.class);
+     CloseableHttpClient httpClient = mock(CloseableHttpClient.class);
+     CloseableHttpResponse response = mock(CloseableHttpResponse.class);
+     StatusLine statusLine = mock(StatusLine.class);
      BasicHttpEntity entity;
      BasicHttpEntity entity1;
      Map<String, ?> conf;
@@ -59,10 +60,6 @@ import static org.mockito.ArgumentMatchers.any;
          conf = YmlReader.readFromFile(new File("src/test/resources/conf/config.yml"));
          entity = new BasicHttpEntity();
          entity.setContent(new FileInputStream("src/test/resources/json/xdcr/bandwidth-usage.json"));
-         try (MockedStatic<MetricPathUtils> metricPathUtilsMock = Mockito.mockStatic(MetricPathUtils.class)) {
-             metricPathUtilsMock.when(() -> MetricPathUtils.buildMetricPath(Mockito.anyString(), Mockito.anyString(), Mockito.anyString(), Mockito.anyString()))
-                     .thenReturn("Custom Metrics|CouchBase|Cluster1|xdcr|beer-sample");
-         }
      }
  
      @Test
@@ -70,28 +67,33 @@ import static org.mockito.ArgumentMatchers.any;
          ArgumentCaptor<List> pathCaptor = ArgumentCaptor.forClass(List.class);
          CountDownLatch latch = new CountDownLatch(1);
  
-         Mockito.when(contextConfiguration.getContext()).thenReturn(context);
-         Mockito.when(context.getHttpClient()).thenReturn(httpClient);
-         Mockito.when(context.getExecutorService()).thenReturn(executorService);
-         Mockito.when(httpClient.execute(any(HttpGet.class))).thenReturn(response);
-         Mockito.when(statusLine.getStatusCode()).thenReturn(200);
-         Mockito.when(response.getStatusLine()).thenReturn(statusLine);
-         Mockito.when(response.getEntity()).thenReturn(entity);
+         when(contextConfiguration.getContext()).thenReturn(context);
+         when(context.getHttpClient()).thenReturn(httpClient);
+         when(context.getExecutorService()).thenReturn(executorService);
+         when(httpClient.execute(any(HttpGet.class))).thenReturn(response);
+         when(statusLine.getStatusCode()).thenReturn(200);
+         when(response.getStatusLine()).thenReturn(statusLine);
+         when(response.getEntity()).thenReturn(entity);
  
-         Map<String, ?> metricsMap = (Map<String, ?>)conf.get("metrics");
-         Map<String, ?> xdcrMap = (Map<String, ?>) metricsMap.get("xdcr");
-         List<Map<String, ?>> xdcrList = (List<Map<String, ?>>)xdcrMap.get("stats");
-         Map<String, ?> bandwidthMetric = (Map<String, ?>)xdcrList.get(0);
-         IndividualXDCRMetric xdcrMetrics = new IndividualXDCRMetric(contextConfiguration, metricWriteHelper, "cluster1", "localhost:8090", bandwidthMetric, "0222feac39bb82196a59d9b031ec9083", "beer-sample", "default", latch);
-         xdcrMetrics.run();
+         try (MockedStatic<MetricPathUtils> mockedMetricPathUtils = Mockito.mockStatic(MetricPathUtils.class)) {
+             mockedMetricPathUtils.when(() -> MetricPathUtils.buildMetricPath(Mockito.anyString(), Mockito.anyString(), Mockito.anyString(), Mockito.anyString())).thenReturn("Custom Metrics|CouchBase|Cluster1|xdcr|beer-sample");
  
-         verify(metricWriteHelper, times(1)).transformAndPrintMetrics(pathCaptor.capture());
-         List<Metric> resultList = pathCaptor.getValue();
-         Set<String> metricNames = Sets.newHashSet();
-         metricNames.add("bandwidth_usage");
-         for(Metric metric : resultList){
-             Assert.assertTrue(metricNames.contains(metric.getMetricName()));
+             Map<String, ?> metricsMap = (Map<String, ?>)conf.get("metrics");
+             Map<String, ?> xdcrMap = (Map<String, ?>) metricsMap.get("xdcr");
+             List<Map<String, ?>> xdcrList = (List<Map<String, ?>>)xdcrMap.get("stats");
+             Map<String, ?> bandwidthMetric = (Map<String, ?>)xdcrList.get(0);
+             IndividualXDCRMetric xdcrMetrics = new IndividualXDCRMetric(contextConfiguration, metricWriteHelper, "cluster1", "localhost:8090", bandwidthMetric, "0222feac39bb82196a59d9b031ec9083", "beer-sample", "default", latch);
+             xdcrMetrics.run();
+ 
+             verify(metricWriteHelper, times(1)).transformAndPrintMetrics(pathCaptor.capture());
+             List<Metric> resultList = pathCaptor.getValue();
+             Set<String> metricNames = Sets.newHashSet();
+             metricNames.add("bandwidth_usage");
+             for(Metric metric : resultList){
+                 Assert.assertTrue(metricNames.contains(metric.getMetricName()));
+             }
+             Assert.assertTrue(resultList.size() == 1);
          }
-         Assert.assertTrue(resultList.size() == 1);
      }
  }
+ 

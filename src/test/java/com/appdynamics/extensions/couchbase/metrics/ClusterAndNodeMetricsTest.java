@@ -11,7 +11,6 @@
  import com.appdynamics.extensions.conf.MonitorContext;
  import com.appdynamics.extensions.conf.MonitorContextConfiguration;
  import com.appdynamics.extensions.metrics.Metric;
- import com.appdynamics.extensions.util.MetricPathUtils;
  import com.appdynamics.extensions.yml.YmlReader;
  import com.google.common.collect.Sets;
  import org.apache.http.StatusLine;
@@ -33,20 +32,18 @@
  import java.util.Map;
  import java.util.Set;
  import java.util.concurrent.CountDownLatch;
-
-import static org.mockito.ArgumentMatchers.any;
-//  import static org.mockito.Matchers.any;
- import static org.mockito.Mockito.times;
- import static org.mockito.Mockito.verify;
+ 
+ import static org.mockito.ArgumentMatchers.any;
+ import static org.mockito.Mockito.*;
  
  public class ClusterAndNodeMetricsTest {
  
-     MonitorContextConfiguration contextConfiguration = Mockito.mock(MonitorContextConfiguration.class);
-     MonitorContext context = Mockito.mock(MonitorContext.class);
-     MetricWriteHelper metricWriteHelper = Mockito.mock(MetricWriteHelper.class);
-     CloseableHttpClient httpClient = Mockito.mock(CloseableHttpClient.class);
-     CloseableHttpResponse response = Mockito.mock(CloseableHttpResponse.class);
-     StatusLine statusLine = Mockito.mock(StatusLine.class);
+     MonitorContextConfiguration contextConfiguration = mock(MonitorContextConfiguration.class);
+     MonitorContext context = mock(MonitorContext.class);
+     MetricWriteHelper metricWriteHelper = mock(MetricWriteHelper.class);
+     CloseableHttpClient httpClient = mock(CloseableHttpClient.class);
+     CloseableHttpResponse response = mock(CloseableHttpResponse.class);
+     StatusLine statusLine = mock(StatusLine.class);
      BasicHttpEntity entity;
      Map<String, ?> conf;
  
@@ -62,15 +59,15 @@ import static org.mockito.ArgumentMatchers.any;
          ArgumentCaptor<List> pathCaptor = ArgumentCaptor.forClass(List.class);
          CountDownLatch latch = new CountDownLatch(1);
  
-         Mockito.when(contextConfiguration.getContext()).thenReturn(context);
-         Mockito.when(context.getHttpClient()).thenReturn(httpClient);
-         Mockito.when(httpClient.execute(any(HttpGet.class))).thenReturn(response);
-         Mockito.when(statusLine.getStatusCode()).thenReturn(200);
-         Mockito.when(response.getStatusLine()).thenReturn(statusLine);
-         Mockito.when(response.getEntity()).thenReturn(entity);
+         when(contextConfiguration.getContext()).thenReturn(context);
+         when(context.getHttpClient()).thenReturn(httpClient);
+         when(httpClient.execute(any(HttpGet.class))).thenReturn(response);
+         when(statusLine.getStatusCode()).thenReturn(200);
+         when(response.getStatusLine()).thenReturn(statusLine);
+         when(response.getEntity()).thenReturn(entity);
  
-         try (MockedStatic<MetricPathUtils> metricPathUtils = Mockito.mockStatic(MetricPathUtils.class)) {
-             metricPathUtils.when(() -> MetricPathUtils.buildMetricPath(Mockito.anyString(), Mockito.anyString()))
+         try (MockedStatic<com.appdynamics.extensions.util.MetricPathUtils> mockedStatic = Mockito.mockStatic(com.appdynamics.extensions.util.MetricPathUtils.class)) {
+             mockedStatic.when(() -> com.appdynamics.extensions.util.MetricPathUtils.buildMetricPath(Mockito.anyString(), Mockito.anyString()))
                      .thenReturn("Custom Metrics|CouchBase|Cluster1|nodes|172.17.0.2;8091");
  
              Map<String, ?> metricsMap = (Map<String, ?>) conf.get("metrics");
@@ -81,7 +78,44 @@ import static org.mockito.ArgumentMatchers.any;
  
              List<Metric> resultList = pathCaptor.getValue();
              Set<String> metricNames = Sets.newHashSet();
-             // Asserts remain the same
+             metricNames.add("total");
+             metricNames.add("quotaTotal");
+             metricNames.add("used");
+             metricNames.add("usedByData");
+             metricNames.add("free");
+             metricNames.add("quotaUsed");
+             metricNames.add("quotaUsedPerNode");
+             metricNames.add("quotaTotalPerNode");
+             metricNames.add("rebalance_success");
+             metricNames.add("rebalance_start");
+             metricNames.add("rebalance_success");
+             metricNames.add("rebalanceStatus");
+             metricNames.add("cmd_get");
+             metricNames.add("couch_docs_actual_disk_size");
+             metricNames.add("couch_docs_data_size");
+             metricNames.add("couch_spatial_data_size");
+             metricNames.add("couch_spatial_disk_size");
+             metricNames.add("couch_views_actual_disk_size");
+             metricNames.add("couch_views_data_size");
+             metricNames.add("curr_items");
+             metricNames.add("curr_items_tot");
+             metricNames.add("ep_bg_fetched");
+             metricNames.add("get_hits");
+             metricNames.add("mem_used");
+             metricNames.add("ops");
+             metricNames.add("vb_replica_curr_items");
+             metricNames.add("cpu_utilization_rate");
+             metricNames.add("swap_total");
+             metricNames.add("swap_used");
+             metricNames.add("mem_total");
+             metricNames.add("mem_free");
+             metricNames.add("clusterMembership");
+             metricNames.add("status");
+ 
+             for (Metric metric : resultList) {
+                 Assert.assertTrue(metricNames.contains(metric.getMetricName()));
+             }
          }
      }
  }
+ 

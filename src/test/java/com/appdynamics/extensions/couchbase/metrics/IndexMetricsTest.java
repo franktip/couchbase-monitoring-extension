@@ -35,23 +35,26 @@
  
  import static org.mockito.ArgumentMatchers.any;
  import static org.mockito.ArgumentMatchers.anyList;
+ import static org.mockito.Mockito.mock;
  import static org.mockito.Mockito.times;
  import static org.mockito.Mockito.verify;
+ import static org.mockito.Mockito.when;
  
- public class IndexMetricsTest {
  
-     MonitorContextConfiguration contextConfiguration = Mockito.mock(MonitorContextConfiguration.class);
-     MonitorContext context = Mockito.mock(MonitorContext.class);
-     MetricWriteHelper metricWriteHelper = Mockito.mock(MetricWriteHelper.class);
-     CloseableHttpClient httpClient = Mockito.mock(CloseableHttpClient.class);
-     CloseableHttpResponse response = Mockito.mock(CloseableHttpResponse.class);
-     StatusLine statusLine = Mockito.mock(StatusLine.class);
+ public class IndexMetricsTest{
+ 
+     MonitorContextConfiguration contextConfiguration = mock(MonitorContextConfiguration.class);
+     MonitorContext context = mock(MonitorContext.class);
+     MetricWriteHelper metricWriteHelper = mock(MetricWriteHelper.class);
+     CloseableHttpClient httpClient = mock(CloseableHttpClient.class);
+     CloseableHttpResponse response = mock(CloseableHttpResponse.class);
+     StatusLine statusLine = mock(StatusLine.class);
      BasicHttpEntity entity;
      Map<String, ?> conf;
      Map<String, ?> confWithIncludeFalse;
  
      @Before
-     public void init() throws IOException {
+     public void init() throws IOException{
          conf = YmlReader.readFromFile(new File("src/test/resources/conf/config.yml"));
          confWithIncludeFalse = YmlReader.readFromFile(new File("src/test/resources/conf/config_WithIncludeFalse.yml"));
          entity = new BasicHttpEntity();
@@ -59,68 +62,55 @@
      }
  
      @Test
-     public void indexMetricsTest() throws IOException {
+     public void indexMetricsTest() throws IOException{
          ArgumentCaptor<List> pathCaptor = ArgumentCaptor.forClass(List.class);
          CountDownLatch latch = new CountDownLatch(1);
  
-         try (MockedStatic<MonitorContextConfiguration> mockedContextConfig = Mockito.mockStatic(MonitorContextConfiguration.class);
-              MockedStatic<MonitorContext> mockedContext = Mockito.mockStatic(MonitorContext.class);
-              MockedStatic<CloseableHttpClient> mockedHttpClient = Mockito.mockStatic(CloseableHttpClient.class);
-              MockedStatic<StatusLine> mockedStatusLine = Mockito.mockStatic(StatusLine.class);
-              MockedStatic<BasicHttpEntity> mockedEntity = Mockito.mockStatic(BasicHttpEntity.class)) {
-             mockedContextConfig.when(() -> Mockito.mock(MonitorContextConfiguration.class)).thenReturn(contextConfiguration);
-             mockedContext.when(() -> Mockito.mock(MonitorContext.class)).thenReturn(context);
-             mockedHttpClient.when(() -> Mockito.mock(CloseableHttpClient.class)).thenReturn(httpClient);
-             mockedStatusLine.when(() -> Mockito.mock(StatusLine.class)).thenReturn(statusLine);
-             mockedEntity.when(() -> new BasicHttpEntity()).thenReturn(entity);
+         when(contextConfiguration.getContext()).thenReturn(context);
+         when(context.getHttpClient()).thenReturn(httpClient);
+         when(httpClient.execute(any(HttpGet.class))).thenReturn(response);
+         when(statusLine.getStatusCode()).thenReturn(200);
+         when(response.getStatusLine()).thenReturn(statusLine);
+         when(response.getEntity()).thenReturn(entity);
  
-             Mockito.when(httpClient.execute(any(HttpGet.class))).thenReturn(response);
-             Mockito.when(statusLine.getStatusCode()).thenReturn(200);
-             Mockito.when(response.getStatusLine()).thenReturn(statusLine);
-             Mockito.when(response.getEntity()).thenReturn(entity);
+         Map<String, ?> metricsMap = (Map<String, ?>)conf.get("metrics");
+         IndexMetrics indexMetrics = new IndexMetrics(contextConfiguration, metricWriteHelper, "cluster1", "localhost:8090", metricsMap, latch);
  
-             Map<String, ?> metricsMap = (Map<String, ?>) conf.get("metrics");
-             IndexMetrics indexMetrics = new IndexMetrics(contextConfiguration, metricWriteHelper, "cluster1", "localhost:8090", metricsMap, latch);
+         try (MockedStatic<IndexMetrics> mocked = Mockito.mockStatic(IndexMetrics.class)) {
              indexMetrics.run();
- 
-             verify(metricWriteHelper, times(1)).transformAndPrintMetrics(pathCaptor.capture());
-             List<Metric> resultList = pathCaptor.getValue();
-             Set<String> metricNames = Sets.newHashSet();
-             metricNames.add("memorySnapshotInterval");
-             metricNames.add("stableSnapshotInterval");
-             metricNames.add("maxRollbackPoints");
-             for (Metric metric : resultList) {
-                 Assert.assertTrue(metricNames.contains(metric.getMetricName()));
-             }
-             Assert.assertTrue(resultList.size() == 3);
          }
+ 
+         verify(metricWriteHelper, times(1)).transformAndPrintMetrics(pathCaptor.capture());
+         List<Metric> resultList = pathCaptor.getValue();
+         Set<String> metricNames = Sets.newHashSet();
+         metricNames.add("memorySnapshotInterval");
+         metricNames.add("stableSnapshotInterval");
+         metricNames.add("maxRollbackPoints");
+         for(Metric metric : resultList){
+             Assert.assertTrue(metricNames.contains(metric.getMetricName()));
+         }
+         Assert.assertTrue(resultList.size() == 3);
      }
  
      @Test
-     public void indexMetricsWithIncludeFalseTest() throws IOException {
+     public void indexMetricsWithIncludeFalseTest() throws IOException{
          CountDownLatch latch = new CountDownLatch(1);
  
-         try (MockedStatic<MonitorContextConfiguration> mockedContextConfig = Mockito.mockStatic(MonitorContextConfiguration.class);
-              MockedStatic<MonitorContext> mockedContext = Mockito.mockStatic(MonitorContext.class);
-              MockedStatic<CloseableHttpClient> mockedHttpClient = Mockito.mockStatic(CloseableHttpClient.class);
-              MockedStatic<StatusLine> mockedStatusLine = Mockito.mockStatic(StatusLine.class);
-              MockedStatic<BasicHttpEntity> mockedEntity = Mockito.mockStatic(BasicHttpEntity.class)) {
-             mockedContextConfig.when(() -> Mockito.mock(MonitorContextConfiguration.class)).thenReturn(contextConfiguration);
-             mockedContext.when(() -> Mockito.mock(MonitorContext.class)).thenReturn(context);
-             mockedHttpClient.when(() -> Mockito.mock(CloseableHttpClient.class)).thenReturn(httpClient);
-             mockedStatusLine.when(() -> Mockito.mock(StatusLine.class)).thenReturn(statusLine);
-             mockedEntity.when(() -> new BasicHttpEntity()).thenReturn(entity);
+         when(contextConfiguration.getContext()).thenReturn(context);
+         when(context.getHttpClient()).thenReturn(httpClient);
+         when(httpClient.execute(any(HttpGet.class))).thenReturn(response);
+         when(statusLine.getStatusCode()).thenReturn(200);
+         when(response.getStatusLine()).thenReturn(statusLine);
+         when(response.getEntity()).thenReturn(entity);
  
-             Mockito.when(httpClient.execute(any(HttpGet.class))).thenReturn(response);
-             Mockito.when(statusLine.getStatusCode()).thenReturn(200);
-             Mockito.when(response.getStatusLine()).thenReturn(statusLine);
-             Mockito.when(response.getEntity()).thenReturn(entity);
+         Map<String, ?> metricsMap = (Map<String, ?>)confWithIncludeFalse.get("metrics");
+         IndexMetrics indexMetrics2 = new IndexMetrics(contextConfiguration, metricWriteHelper, "cluster1", "localhost:8090", metricsMap, latch);
  
-             Map<String, ?> metricsMap = (Map<String, ?>) confWithIncludeFalse.get("metrics");
-             IndexMetrics indexMetrics2 = new IndexMetrics(contextConfiguration, metricWriteHelper, "cluster1", "localhost:8090", metricsMap, latch);
+         try (MockedStatic<IndexMetrics> mocked = Mockito.mockStatic(IndexMetrics.class)) {
              indexMetrics2.run();
- 
-             verify(metricWriteHelper, times(0)).transformAndPrintMetrics(anyList());
          }
+ 
+         verify(metricWriteHelper, times(0)).transformAndPrintMetrics(anyList());
      }
  }
+ 

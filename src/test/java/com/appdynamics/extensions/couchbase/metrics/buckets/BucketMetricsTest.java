@@ -35,7 +35,6 @@
  import java.util.Set;
  import java.util.concurrent.CountDownLatch;
  
-//  import static org.mockito.Matchers.*;
  import static org.mockito.Mockito.*;
  
  public class BucketMetricsTest {
@@ -69,8 +68,9 @@
          when(statusLine.getStatusCode()).thenReturn(200);
          when(response.getStatusLine()).thenReturn(statusLine);
          when(response.getEntity()).thenReturn(entity);
-         try (MockedStatic<MetricPathUtils> mockedMetricPathUtils = Mockito.mockStatic(MetricPathUtils.class)) {
-             mockedMetricPathUtils.when(() -> MetricPathUtils.buildMetricPath(anyString(), anyString())).thenReturn("Custom Metrics|CouchBase|Cluster1|buckets|beer-sample");
+ 
+         try (MockedStatic<MetricPathUtils> mockedStatic = Mockito.mockStatic(MetricPathUtils.class)) {
+             mockedStatic.when(() -> MetricPathUtils.buildMetricPath(anyString(), anyString())).thenReturn("Custom Metrics|CouchBase|Cluster1|buckets|beer-sample");
              doNothing().when(bucketMetricsProcessor).getIndividualBucketMetrics(eq(monitorContextConfiguration), eq(metricWriteHelper), eq("cluster1"), eq("localhost:8090"), anyMap(), anySet());
  
              Map<String, ?> metricsMap = (Map<String, ?>) conf.get("metrics");
@@ -97,3 +97,4 @@
          }
      }
  }
+ 

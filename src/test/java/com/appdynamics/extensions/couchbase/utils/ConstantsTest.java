@@ -31,7 +31,7 @@
  public class ConstantsTest {
  
      @Test
-     public void getMetricsTest() throws IOException {
+     public void getMetricsTest() throws IOException{
          try (MockedStatic<MetricPathUtils> mocked = Mockito.mockStatic(MetricPathUtils.class)) {
              List<Map<String, ?>> metricsList = Lists.newArrayList();
              Map<String, ?> metricsMap = Maps.newHashMap();
@@ -39,7 +39,6 @@
              metricsList.add(metricsMap);
              ObjectMapper mapper = new ObjectMapper();
              JsonNode metricsNode = mapper.readValue(new File("src/test/resources/json/constants/ConstantsMetricsNode.json"), JsonNode.class);
-             mocked.when(() -> MetricPathUtils.buildMetricPath(Mockito.anyString(), Mockito.anyString())).thenReturn("Custom json|Redis");
              List<Metric> resultMetricList = getMetrics("Custom json|Redis", metricsList, metricsNode);
              Assert.assertTrue(resultMetricList.size() == 1);
              Assert.assertTrue(resultMetricList.listIterator().next().getMetricName().equals("total"));
@@ -48,15 +47,15 @@
      }
  
      @Test
-     public void getMetricsFromArrayTest() throws IOException {
+     public void getMetricsFromArrayTest() throws IOException{
          try (MockedStatic<MetricPathUtils> mocked = Mockito.mockStatic(MetricPathUtils.class)) {
+             mocked.when(() -> MetricPathUtils.buildMetricPath(Mockito.anyString(), Mockito.anyString())).thenReturn("Custom json|Redis");
              List<Map<String, ?>> metricsList = Lists.newArrayList();
              Map<String, ?> metricsMap = Maps.newHashMap();
              metricsMap.put("timestamp", null);
              metricsList.add(metricsMap);
              ObjectMapper mapper = new ObjectMapper();
              JsonNode metricsNode = mapper.readValue(new File("src/test/resources/json/constants/ConstantsMetricNodeWithArray.json"), JsonNode.class);
-             mocked.when(() -> MetricPathUtils.buildMetricPath(Mockito.anyString(), Mockito.anyString())).thenReturn("Custom json|Redis");
              List<Metric> resultMetricList = getMetricsFromArray("Custom json", "Redis", metricsList, metricsNode);
              Assert.assertTrue(resultMetricList.size() == 1);
              Assert.assertTrue(resultMetricList.listIterator().next().getMetricName().equals("timestamp"));
@@ -64,3 +63,4 @@
          }
      }
  }
+ 

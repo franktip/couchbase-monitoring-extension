@@ -38,8 +38,7 @@
  import java.util.concurrent.CountDownLatch;
 
 import static org.mockito.ArgumentMatchers.any;
-//  import static org.mockito.Matchers.any;
- import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.times;
  import static org.mockito.Mockito.verify;
  
  public class IndividualXDCRBucketsTest {
@@ -78,6 +77,7 @@ import static org.mockito.ArgumentMatchers.any;
  
          List<Map<String, ?>> xdcrList = Lists.newArrayList();
          ObjectMapper mapper = new ObjectMapper();
+         
          try (MockedStatic<IndividualXDCRBuckets> mocked = Mockito.mockStatic(IndividualXDCRBuckets.class)) {
              IndividualXDCRBuckets xdcrMetrics = new IndividualXDCRBuckets(contextConfiguration, metricWriteHelper, "cluster1", "localhost:8090", mapper.readValue(entity.getContent(), JsonNode.class), xdcrList, latch);
              xdcrMetrics.run();
@@ -94,3 +94,4 @@ import static org.mockito.ArgumentMatchers.any;
          Assert.assertTrue(resultList.size() == 1);
      }
  }
+ 

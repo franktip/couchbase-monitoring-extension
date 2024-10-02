@@ -34,20 +34,20 @@
  import java.util.concurrent.CountDownLatch;
 
 import static org.mockito.ArgumentMatchers.any;
-//  import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.mock;
  import static org.mockito.Mockito.times;
  import static org.mockito.Mockito.verify;
  import static org.mockito.Mockito.when;
  
  public class OtherBucketMetricsTest {
  
-     MonitorContextConfiguration configuration = Mockito.mock(MonitorContextConfiguration.class);
-     MonitorContext context = Mockito.mock(MonitorContext.class);
-     MetricWriteHelper metricWriteHelper = Mockito.mock(MetricWriteHelper.class);
-     CloseableHttpClient httpClient = Mockito.mock(CloseableHttpClient.class);
-     MonitorExecutorService executorService = Mockito.mock(MonitorExecutorService.class);
-     CloseableHttpResponse response = Mockito.mock(CloseableHttpResponse.class);
-     StatusLine statusLine = Mockito.mock(StatusLine.class);
+     MonitorContextConfiguration configuration = mock(MonitorContextConfiguration.class);
+     MonitorContext context = mock(MonitorContext.class);
+     MetricWriteHelper metricWriteHelper = mock(MetricWriteHelper.class);
+     CloseableHttpClient httpClient = mock(CloseableHttpClient.class);
+     MonitorExecutorService executorService = mock(MonitorExecutorService.class);
+     CloseableHttpResponse response = mock(CloseableHttpResponse.class);
+     StatusLine statusLine = mock(StatusLine.class);
      BasicHttpEntity entity;
      Map<String, ?> conf;
  
@@ -77,17 +77,18 @@ import static org.mockito.ArgumentMatchers.any;
              Map<String, ?> bucketMap = (Map<String, ?>) metricsMap.get("buckets");
              OtherBucketMetrics otherBucketMetrics = new OtherBucketMetrics(configuration, metricWriteHelper, "cluster1", "", "localhost:8090", bucketMap, latch);
              otherBucketMetrics.run();
+         }
  
-             verify(metricWriteHelper, times(1)).transformAndPrintMetrics(listCaptor.capture());
-             List<Metric> resultList = listCaptor.getValue();
-             for (Metric metric : resultList) {
-                 if (metric.getMetricName().equalsIgnoreCase("bytes_read")) {
-                     Assert.assertTrue(metric.getMetricValue().equalsIgnoreCase("157.7350859453994"));
-                 }
-                 if (metric.getMetricName().equalsIgnoreCase("bytes_written")) {
-                     Assert.assertTrue(metric.getMetricValue().equalsIgnoreCase("377695.652173913"));
-                 }
+         verify(metricWriteHelper, times(1)).transformAndPrintMetrics(listCaptor.capture());
+         List<Metric> resultList = listCaptor.getValue();
+         for (Metric metric : resultList) {
+             if (metric.getMetricName().equalsIgnoreCase("bytes_read")) {
+                 Assert.assertTrue(metric.getMetricValue().equalsIgnoreCase("157.7350859453994"));
+             }
+             if (metric.getMetricName().equalsIgnoreCase("bytes_written")) {
+                 Assert.assertTrue(metric.getMetricValue().equalsIgnoreCase("377695.652173913"));
              }
          }
      }
  }
+ 
