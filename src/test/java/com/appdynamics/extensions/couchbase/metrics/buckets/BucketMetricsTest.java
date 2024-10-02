@@ -35,7 +35,7 @@
  import java.util.Set;
  import java.util.concurrent.CountDownLatch;
  
- import static org.mockito.Matchers.*;
+//  import static org.mockito.Matchers.*;
  import static org.mockito.Mockito.*;
  
  public class BucketMetricsTest {
