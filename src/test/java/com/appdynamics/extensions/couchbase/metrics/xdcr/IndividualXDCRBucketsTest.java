@@ -36,6 +36,11 @@
  import java.util.Map;
  import java.util.Set;
  import java.util.concurrent.CountDownLatch;
+
+import static org.mockito.ArgumentMatchers.any;
+//  import static org.mockito.Matchers.any;
+ import static org.mockito.Mockito.times;
+ import static org.mockito.Mockito.verify;
  
  public class IndividualXDCRBucketsTest {
  
@@ -63,29 +68,29 @@
          ArgumentCaptor<List> pathCaptor = ArgumentCaptor.forClass(List.class);
          CountDownLatch latch = new CountDownLatch(1);
  
-         try (MockedStatic<MonitorContextConfiguration> mockedContextConfiguration = Mockito.mockStatic(MonitorContextConfiguration.class)) {
-             mockedContextConfiguration.when(() -> MonitorContextConfiguration.getContext()).thenReturn(context);
-             Mockito.when(context.getHttpClient()).thenReturn(httpClient);
-             Mockito.when(context.getExecutorService()).thenReturn(executorService);
-             Mockito.when(httpClient.execute(Mockito.any(HttpGet.class))).thenReturn(response);
-             Mockito.when(statusLine.getStatusCode()).thenReturn(200);
-             Mockito.when(response.getStatusLine()).thenReturn(statusLine);
-             Mockito.when(response.getEntity()).thenReturn(entity);
+         Mockito.when(contextConfiguration.getContext()).thenReturn(context);
+         Mockito.when(context.getHttpClient()).thenReturn(httpClient);
+         Mockito.when(context.getExecutorService()).thenReturn(executorService);
+         Mockito.when(httpClient.execute(any(HttpGet.class))).thenReturn(response);
+         Mockito.when(statusLine.getStatusCode()).thenReturn(200);
+         Mockito.when(response.getStatusLine()).thenReturn(statusLine);
+         Mockito.when(response.getEntity()).thenReturn(entity);
  
-             List<Map<String, ?>> xdcrList = Lists.newArrayList();
-             ObjectMapper mapper = new ObjectMapper();
+         List<Map<String, ?>> xdcrList = Lists.newArrayList();
+         ObjectMapper mapper = new ObjectMapper();
+         try (MockedStatic<IndividualXDCRBuckets> mocked = Mockito.mockStatic(IndividualXDCRBuckets.class)) {
              IndividualXDCRBuckets xdcrMetrics = new IndividualXDCRBuckets(contextConfiguration, metricWriteHelper, "cluster1", "localhost:8090", mapper.readValue(entity.getContent(), JsonNode.class), xdcrList, latch);
              xdcrMetrics.run();
- 
-             Mockito.verify(metricWriteHelper, Mockito.times(1)).transformAndPrintMetrics(pathCaptor.capture());
-             List<Metric> resultList = pathCaptor.getValue();
-             Set<String> metricNames = Sets.newHashSet();
-             metricNames.add("status");
-             for (Metric metric : resultList) {
-                 Assert.assertTrue(metricNames.contains(metric.getMetricName()));
-                 Assert.assertTrue(metric.getMetricValue().equalsIgnoreCase("1"));
-             }
-             Assert.assertTrue(resultList.size() == 1);
          }
+ 
+         verify(metricWriteHelper, times(1)).transformAndPrintMetrics(pathCaptor.capture());
+         List<Metric> resultList = pathCaptor.getValue();
+         Set<String> metricNames = Sets.newHashSet();
+         metricNames.add("status");
+         for(Metric metric : resultList){
+             Assert.assertTrue(metricNames.contains(metric.getMetricName()));
+             Assert.assertTrue(metric.getMetricValue().equalsIgnoreCase("1"));
+         }
+         Assert.assertTrue(resultList.size() == 1);
      }
  }
