@@ -32,57 +32,55 @@
  import java.util.Set;
  import java.util.concurrent.CountDownLatch;
  
- import static org.mockito.ArgumentMatchers.any;
- import static org.mockito.Mockito.*;
+ public class QueryServiceMetricsTest{
  
- public class QueryServiceMetricsTest {
- 
-     MonitorContextConfiguration contextConfiguration = mock(MonitorContextConfiguration.class);
-     MetricWriteHelper metricWriteHelper = mock(MetricWriteHelper.class);
-     CloseableHttpClient httpClient = mock(CloseableHttpClient.class);
-     CloseableHttpResponse response = mock(CloseableHttpResponse.class);
-     StatusLine statusLine = mock(StatusLine.class);
+     MonitorContextConfiguration contextConfiguration = Mockito.mock(MonitorContextConfiguration.class);
+     MetricWriteHelper metricWriteHelper = Mockito.mock(MetricWriteHelper.class);
+     CloseableHttpClient httpClient = Mockito.mock(CloseableHttpClient.class);
+     CloseableHttpResponse response = Mockito.mock(CloseableHttpResponse.class);
+     StatusLine statusLine = Mockito.mock(StatusLine.class);
      BasicHttpEntity entity;
      Map<String, ?> conf;
  
      @Before
-     public void init() throws IOException {
+     public void init() throws IOException{
          conf = YmlReader.readFromFile(new File("src/test/resources/conf/config.yml"));
          entity = new BasicHttpEntity();
          entity.setContent(new FileInputStream("src/test/resources/json/Query.json"));
      }
  
      @Test
-     public void queryMetricsTest() throws IOException {
+     public void queryMetricsTest() throws IOException{
          ArgumentCaptor<List> pathCaptor = ArgumentCaptor.forClass(List.class);
          CountDownLatch latch = new CountDownLatch(1);
-         try (MockedStatic<org.apache.http.client.methods.HttpGet> mockedHttpGet = Mockito.mockStatic(HttpGet.class)) {
-             when(httpClient.execute(any(HttpGet.class))).thenReturn(response);
-             when(statusLine.getStatusCode()).thenReturn(200);
-             when(response.getStatusLine()).thenReturn(statusLine);
-             when(response.getEntity()).thenReturn(entity);
-             Map<String, ?> metricsMap = (Map<String, ?>) conf.get("metrics");
-             List<Map<String, String>> serversList = (List<Map<String, String>>) conf.get("servers");
+         Mockito.when(httpClient.execute(Mockito.any(HttpGet.class))).thenReturn(response);
+         Mockito.when(statusLine.getStatusCode()).thenReturn(200);
+         Mockito.when(response.getStatusLine()).thenReturn(statusLine);
+         Mockito.when(response.getEntity()).thenReturn(entity);
+         Map<String, ?> metricsMap = (Map<String, ?>)conf.get("metrics");
+         List<Map<String, String>> serversList = (List<Map<String, String>>)conf.get("servers");
+         try (MockedStatic<QueryServiceMetrics> mocked = Mockito.mockStatic(QueryServiceMetrics.class)) {
              QueryServiceMetrics queryServiceMetrics = new QueryServiceMetrics(contextConfiguration, metricWriteHelper, httpClient, serversList.get(0), "cluster1", metricsMap, latch);
              queryServiceMetrics.run();
-             verify(metricWriteHelper, times(1)).transformAndPrintMetrics(pathCaptor.capture());
-             List<Metric> resultList = pathCaptor.getValue();
-             Set<String> metricNames = Sets.newHashSet();
-             metricNames.add("request.completed.count");
-             metricNames.add("request.active.count");
-             metricNames.add("request.per.sec.1min");
-             metricNames.add("request.per.sec.5min");
-             metricNames.add("request.per.sec.15min");
-             metricNames.add("request_time.mean");
-             metricNames.add("request_time.median");
-             metricNames.add("request_time.80percentile");
-             metricNames.add("request_time.95percentile");
-             metricNames.add("request_time.99percentile");
-             metricNames.add("request.prepared.percent");
-             for (Metric metric : resultList) {
-                 Assert.assertTrue(metricNames.contains(metric.getMetricName()));
-             }
-             Assert.assertTrue(resultList.size() == 11);
          }
+         Mockito.verify(metricWriteHelper, Mockito.times(1)).transformAndPrintMetrics(pathCaptor.capture());
+         List<Metric> resultList = pathCaptor.getValue();
+         Set<String> metricNames = Sets.newHashSet();
+         metricNames.add("request.completed.count");
+         metricNames.add("request.active.count");
+         metricNames.add("request.per.sec.1min");
+         metricNames.add("request.per.sec.5min");
+         metricNames.add("request.per.sec.15min");
+         metricNames.add("request_time.mean");
+         metricNames.add("request_time.median");
+         metricNames.add("request_time.80percentile");
+         metricNames.add("request_time.95percentile");
+         metricNames.add("request_time.99percentile");
+         metricNames.add("request.prepared.percent");
+         for(Metric metric : resultList){
+             Assert.assertTrue(metricNames.contains(metric.getMetricName()));
+         }
+         Assert.assertTrue(resultList.size() == 11);
      }
+ 
  }
